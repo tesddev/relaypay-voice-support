@@ -7,18 +7,47 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Set theme before paint to avoid flash -->
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue: #0D2B5E;
       --teal: #0E9E8E;
+      --radius: 8px;
+      --transition: 0.2s ease;
+    }
+
+    [data-theme="light"] {
+      --blue: #0D2B5E;
       --bg: #F5F5F5;
       --surface: #FFFFFF;
       --text: #1A1A1A;
       --text-secondary: #5C5C6B;
       --border: #E0E0E0;
-      --radius: 8px;
+      --mic-hover: #0a2147;
+      --escalation-bg: #FFF5F5;
+      --escalation-border: #FCC;
+      --escalation-text: #B91C1C;
+      --toggle-bg: #E8EAF0;
+      --toggle-hover: #D4D8E4;
+      --toggle-color: #5C5C6B;
+    }
+
+    [data-theme="dark"] {
+      --blue: #4A8FD6;
+      --bg: #0F1117;
+      --surface: #1A1D27;
+      --text: #E8E8F0;
+      --text-secondary: #8B8B9E;
+      --border: #2A2D3A;
+      --mic-hover: #3a78c2;
+      --escalation-bg: #2D1515;
+      --escalation-border: #6B2020;
+      --escalation-text: #F87171;
+      --toggle-bg: #2A2D3A;
+      --toggle-hover: #343848;
+      --toggle-color: #8B8B9E;
     }
 
     body {
@@ -28,6 +57,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      transition: background var(--transition), color var(--transition);
     }
 
     /* Header */
@@ -39,38 +69,25 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      transition: background var(--transition), border-color var(--transition);
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .logo img {
+      height: 36px;
+      width: auto;
+      display: block;
     }
 
-    .logo-mark {
-      width: 32px;
-      height: 32px;
-      background: var(--blue);
+    [data-theme="dark"] .logo img {
+      background: #fff;
+      padding: 4px 10px;
       border-radius: 6px;
+    }
+
+    .header-right {
       display: flex;
       align-items: center;
-      justify-content: center;
-    }
-
-    .logo-mark svg {
-      width: 18px;
-      height: 18px;
-      fill: none;
-      stroke: #fff;
-      stroke-width: 2;
-      stroke-linecap: round;
-    }
-
-    .logo-text {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--blue);
-      letter-spacing: -0.01em;
+      gap: 16px;
     }
 
     .header-badge {
@@ -80,6 +97,38 @@
       letter-spacing: 0.02em;
       text-transform: uppercase;
     }
+
+    /* Theme toggle */
+    .theme-toggle {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: none;
+      background: var(--toggle-bg);
+      color: var(--toggle-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), color var(--transition);
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover { background: var(--toggle-hover); }
+
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon-sun, .icon-moon { display: none; }
+    [data-theme="dark"]  .icon-moon { display: block; }
+    [data-theme="light"] .icon-sun  { display: block; }
 
     /* Main layout */
     main {
@@ -104,6 +153,7 @@
       flex-direction: column;
       align-items: center;
       gap: 24px;
+      transition: background var(--transition), border-color var(--transition);
     }
 
     .call-heading {
@@ -115,6 +165,7 @@
       font-weight: 600;
       color: var(--blue);
       margin-bottom: 6px;
+      transition: color var(--transition);
     }
 
     .call-heading p {
@@ -167,7 +218,7 @@
       z-index: 1;
     }
 
-    .mic-btn:hover { background: #0a2147; transform: scale(1.04); }
+    .mic-btn:hover { background: var(--mic-hover); transform: scale(1.04); }
     .mic-btn:active { transform: scale(0.97); }
     .mic-btn.active { background: var(--teal); }
     .mic-btn.active:hover { background: #0b8a7c; }
@@ -217,14 +268,15 @@
     .escalation-notice {
       display: none;
       width: 100%;
-      background: #FFF5F5;
-      border: 1px solid #FCC;
+      background: var(--escalation-bg);
+      border: 1px solid var(--escalation-border);
       border-radius: var(--radius);
       padding: 12px 16px;
       font-size: 13px;
-      color: #B91C1C;
+      color: var(--escalation-text);
       font-weight: 500;
       text-align: center;
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
     }
 
     .escalation-notice.visible { display: block; }
@@ -281,6 +333,7 @@
       background: var(--bg);
       border-radius: var(--radius);
       border: 1px solid var(--border);
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
     }
 
     .turn.user .turn-text  { border-left: 3px solid var(--teal); }
@@ -301,12 +354,14 @@
       color: var(--text-secondary);
       border-top: 1px solid var(--border);
       background: var(--surface);
+      transition: background var(--transition), border-color var(--transition);
     }
 
     /* Responsive */
     @media (max-width: 480px) {
       .call-card { padding: 28px 20px; }
       main { padding: 24px 16px; }
+      .header-badge { display: none; }
     }
   </style>
 </head>
@@ -314,14 +369,29 @@
 
 <header>
   <div class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 18 18">
-        <path d="M3 9h12M9 3l6 6-6 6" />
-      </svg>
-    </div>
-    <span class="logo-text">RelayPay</span>
+    <img src="logo.png" alt="RelayPay" />
   </div>
-  <span class="header-badge">Customer Support</span>
+  <div class="header-right">
+    <span class="header-badge">Customer Support</span>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <!-- Sun icon (shown in light mode) -->
+      <svg class="icon-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <!-- Moon icon (shown in dark mode) -->
+      <svg class="icon-moon" viewBox="0 0 24 24">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+    </button>
+  </div>
 </header>
 
 <main>
@@ -365,6 +435,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/vapi.js"></script>
 <script>
+  // Theme toggle
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+
+  // Vapi
   const VAPI_PUBLIC_KEY = "%%VAPI_PUBLIC_KEY%%";
   const ASSISTANT_ID    = "61ab0bd8-3691-4efb-ae94-772e81db5008";
 
