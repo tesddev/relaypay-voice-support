@@ -365,15 +365,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/vapi.js"></script>
 <script>
-  // ⚠️ REPLACE THIS with your Vapi PUBLIC key from dashboard.vapi.ai → API Keys
-  // This is NOT the same as your private API key.
-  const VAPI_PUBLIC_KEY = "YOUR_VAPI_PUBLIC_KEY_HERE";
+  const VAPI_PUBLIC_KEY = "%%VAPI_PUBLIC_KEY%%";
   const ASSISTANT_ID    = "61ab0bd8-3691-4efb-ae94-772e81db5008";
-
-  if (VAPI_PUBLIC_KEY === "YOUR_VAPI_PUBLIC_KEY_HERE") {
-    document.getElementById("statusText").textContent = "⚠ Add your Vapi public key to enable calls";
-    document.getElementById("statusDot").className = "status-dot escalation";
-  }
 
   const vapi = new Vapi(VAPI_PUBLIC_KEY);
   const micBtn     = document.getElementById("micBtn");
