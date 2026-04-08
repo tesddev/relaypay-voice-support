@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RelayPay — Customer Support</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #0D2B5E;
+      --teal: #0E9E8E;
+      --bg: #F5F5F5;
+      --surface: #FFFFFF;
+      --text: #1A1A1A;
+      --text-secondary: #5C5C6B;
+      --border: #E0E0E0;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      background: var(--blue);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-mark svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--blue);
+      letter-spacing: -0.01em;
+    }
+
+    .header-badge {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    /* Main layout */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 24px;
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Call card */
+    .call-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 32px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .call-heading {
+      text-align: center;
+    }
+
+    .call-heading h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 6px;
+    }
+
+    .call-heading p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Mic button */
+    .mic-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mic-ring {
+      position: absolute;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 2px solid var(--teal);
+      opacity: 0;
+      transform: scale(1);
+      transition: none;
+    }
+
+    .mic-ring.pulse {
+      animation: ring-pulse 1.6s ease-out infinite;
+    }
+
+    @keyframes ring-pulse {
+      0%   { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 0;   transform: scale(1.6); }
+    }
+
+    .mic-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: none;
+      background: var(--blue);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mic-btn:hover { background: #0a2147; transform: scale(1.04); }
+    .mic-btn:active { transform: scale(0.97); }
+    .mic-btn.active { background: var(--teal); }
+    .mic-btn.active:hover { background: #0b8a7c; }
+
+    .mic-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Status */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-height: 20px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+
+    .status-dot.idle    { background: #C0C0C0; }
+    .status-dot.listening { background: var(--teal); animation: dot-blink 1s ease-in-out infinite; }
+    .status-dot.thinking  { background: #F4A91F; animation: dot-blink 1.4s ease-in-out infinite; }
+    .status-dot.speaking  { background: var(--blue); }
+    .status-dot.escalation { background: #E04848; }
+
+    @keyframes dot-blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Escalation notice */
+    .escalation-notice {
+      display: none;
+      width: 100%;
+      background: #FFF5F5;
+      border: 1px solid #FCC;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #B91C1C;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .escalation-notice.visible { display: block; }
+
+    /* Transcript */
+    .transcript-section {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .transcript-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    .transcript-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .transcript-list::-webkit-scrollbar { width: 4px; }
+    .transcript-list::-webkit-scrollbar-track { background: transparent; }
+    .transcript-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .turn {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .turn-speaker {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .turn-speaker.user    { color: var(--teal); }
+    .turn-speaker.agent   { color: var(--blue); }
+
+    .turn-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+      padding: 10px 14px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .turn.user .turn-text  { border-left: 3px solid var(--teal); }
+    .turn.agent .turn-text { border-left: 3px solid var(--blue); }
+
+    .empty-state {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px 24px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .call-card { padding: 28px 20px; }
+      main { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 18 18">
+        <path d="M3 9h12M9 3l6 6-6 6" />
+      </svg>
+    </div>
+    <span class="logo-text">RelayPay</span>
+  </div>
+  <span class="header-badge">Customer Support</span>
+</header>
+
+<main>
+  <div class="call-card">
+    <div class="call-heading">
+      <h1>Voice Support</h1>
+      <p>Press the button below to speak with our support agent.</p>
+    </div>
+
+    <div class="mic-wrap">
+      <div class="mic-ring" id="micRing"></div>
+      <button class="mic-btn" id="micBtn" aria-label="Start call">
+        <svg viewBox="0 0 24 24">
+          <rect x="9" y="2" width="6" height="12" rx="3"/>
+          <path d="M5 10a7 7 0 0014 0M12 19v3M8 22h8"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot idle" id="statusDot"></div>
+      <span id="statusText">Ready — press to start</span>
+    </div>
+
+    <div class="escalation-notice" id="escalationNotice">
+      Connecting you to a specialist — a support representative will follow up shortly.
+    </div>
+
+    <div class="transcript-section">
+      <div class="transcript-label">Conversation</div>
+      <div class="transcript-list" id="transcriptList">
+        <div class="empty-state" id="emptyState">Your conversation will appear here.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  RelayPay &mdash; Secure cross-border payments for African businesses.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/vapi.js"></script>
+<script>
+  // ⚠️ REPLACE THIS with your Vapi PUBLIC key from dashboard.vapi.ai → API Keys
+  // This is NOT the same as your private API key.
+  const VAPI_PUBLIC_KEY = "YOUR_VAPI_PUBLIC_KEY_HERE";
+  const ASSISTANT_ID    = "61ab0bd8-3691-4efb-ae94-772e81db5008";
+
+  if (VAPI_PUBLIC_KEY === "YOUR_VAPI_PUBLIC_KEY_HERE") {
+    document.getElementById("statusText").textContent = "⚠ Add your Vapi public key to enable calls";
+    document.getElementById("statusDot").className = "status-dot escalation";
+  }
+
+  const vapi = new Vapi(VAPI_PUBLIC_KEY);
+  const micBtn     = document.getElementById("micBtn");
+  const micRing    = document.getElementById("micRing");
+  const statusDot  = document.getElementById("statusDot");
+  const statusText = document.getElementById("statusText");
+  const txList     = document.getElementById("transcriptList");
+  const emptyState = document.getElementById("emptyState");
+  const escNotice  = document.getElementById("escalationNotice");
+
+  let callActive = false;
+  const ESCALATION_KEYWORDS = ["specialist","support call","arrange","preferred time","email address","name, email"];
+
+  function setStatus(state, label) {
+    statusDot.className = "status-dot " + state;
+    statusText.textContent = label;
+  }
+
+  function addTurn(speaker, text) {
+    if (emptyState) emptyState.remove();
+    const turn = document.createElement("div");
+    turn.className = "turn " + speaker;
+    const spLabel = document.createElement("div");
+    spLabel.className = "turn-speaker " + speaker;
+    spLabel.textContent = speaker === "user" ? "You" : "RelayPay Support";
+    const spText = document.createElement("div");
+    spText.className = "turn-text";
+    spText.textContent = text;
+    turn.appendChild(spLabel);
+    turn.appendChild(spText);
+    txList.appendChild(turn);
+    txList.scrollTop = txList.scrollHeight;
+    return spText;
+  }
+
+  function checkEscalation(text) {
+    const lower = text.toLowerCase();
+    return ESCALATION_KEYWORDS.some(kw => lower.includes(kw));
+  }
+
+  micBtn.addEventListener("click", () => {
+    if (!callActive) {
+      vapi.start(ASSISTANT_ID);
+    } else {
+      vapi.stop();
+    }
+  });
+
+  vapi.on("call-start", () => {
+    callActive = true;
+    micBtn.classList.add("active");
+    micRing.classList.add("pulse");
+    setStatus("listening", "Listening...");
+    escNotice.classList.remove("visible");
+  });
+
+  vapi.on("speech-start", () => {
+    setStatus("listening", "Listening...");
+  });
+
+  vapi.on("speech-end", () => {
+    setStatus("thinking", "Thinking...");
+  });
+
+  let agentTurnEl = null;
+
+  vapi.on("message", (msg) => {
+    if (msg.type === "transcript") {
+      if (msg.role === "user" && msg.transcriptType === "final") {
+        addTurn("user", msg.transcript);
+        setStatus("thinking", "Thinking...");
+      }
+      if (msg.role === "assistant") {
+        if (msg.transcriptType === "partial") {
+          if (!agentTurnEl) {
+            agentTurnEl = addTurn("agent", msg.transcript);
+          } else {
+            agentTurnEl.textContent = msg.transcript;
+          }
+          setStatus("speaking", "Speaking...");
+          if (checkEscalation(msg.transcript)) {
+            setStatus("escalation", "Escalating to specialist...");
+            escNotice.classList.add("visible");
+            statusDot.className = "status-dot escalation";
+          }
+        }
+        if (msg.transcriptType === "final") {
+          if (agentTurnEl) agentTurnEl.textContent = msg.transcript;
+          else addTurn("agent", msg.transcript);
+          agentTurnEl = null;
+          setStatus("listening", "Listening...");
+          if (checkEscalation(msg.transcript)) {
+            escNotice.classList.add("visible");
+            setStatus("escalation", "Connecting to specialist...");
+          }
+        }
+      }
+    }
+  });
+
+  vapi.on("call-end", () => {
+    callActive = false;
+    micBtn.classList.remove("active");
+    micRing.classList.remove("pulse");
+    setStatus("idle", "Call ended — press to start a new session");
+    agentTurnEl = null;
+  });
+
+  vapi.on("error", (err) => {
+    callActive = false;
+    micBtn.classList.remove("active");
+    micRing.classList.remove("pulse");
+    const msg = err?.message || err?.error?.message || JSON.stringify(err);
+    setStatus("escalation", "Error: " + msg);
+    console.error("Vapi error:", err);
+  });
+</script>
+</body>
+</html>
