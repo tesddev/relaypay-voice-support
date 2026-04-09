@@ -378,6 +378,19 @@
       display: flex; align-items: center; gap: 6px;
     }
 
+    /* Resolver prompt */
+    .resolver-wrap {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+    }
+    .resolver-input {
+      flex: 1; padding: 9px 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 13px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+    }
+    .resolver-input:focus { border-color: var(--teal); }
+    .resolver-input.error { border-color: #EF4444; }
+
     .detail-row {
       display: flex;
       gap: 12px;
@@ -583,9 +596,7 @@
 
   signOutBtn.addEventListener('click', () => {
     localStorage.removeItem(AUTH_KEY);
-    authInput.value = '';
-    authError.textContent = '';
-    showGate();
+    window.location.href = 'index.html';
   });
 
   // Show gate or proceed on load
@@ -672,6 +683,7 @@
       <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${r.user_email || '—'}</span></div>
       <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value"><span class="cat-badge">${r.category || 'other'}</span></span></div>
       <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value" id="modalStatus">${statusBadge(r.status)}</span></div>
+      ${r.resolved_by ? `<div class="detail-row"><span class="detail-label">Resolved by</span><span class="detail-value">${r.resolved_by} &mdash; ${fmtDate(r.resolved_at)}</span></div>` : ''}
       <div class="detail-row"><span class="detail-label">Appointment</span><span class="detail-value">${fmtAppt(r.appointment_time)}</span></div>
       <div class="detail-row"><span class="detail-label">Logged</span><span class="detail-value">${fmtDate(r.created_at)}</span></div>
       <div class="detail-row"><span class="detail-label">Reason</span><span class="detail-value">${r.escalation_reason || '—'}</span></div>
@@ -681,26 +693,45 @@
 
     const footer = document.getElementById('modalFooter');
     const isResolved = (r.status || 'Open') === 'Resolved';
-    footer.innerHTML = isResolved
-      ? `<span class="already-resolved">✓ Already resolved</span>`
-      : `<button class="resolve-btn" id="resolveBtn">
-           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-           Mark as Resolved
-         </button>`;
 
-    if (!isResolved) {
+    if (isResolved) {
+      footer.innerHTML = `<span class="already-resolved">✓ Resolved by <strong>${r.resolved_by || 'Unknown'}</strong> on ${fmtDate(r.resolved_at)}</span>`;
+    } else {
+      footer.innerHTML = `
+        <div class="resolver-wrap">
+          <input class="resolver-input" id="resolverName" type="text" placeholder="Your name (required)" maxlength="60" autocomplete="off" />
+          <button class="resolve-btn" id="resolveBtn">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Mark Resolved
+          </button>
+        </div>`;
       document.getElementById('resolveBtn').addEventListener('click', () => resolveEscalation(r));
+      document.getElementById('resolverName').addEventListener('keydown', e => {
+        if (e.key === 'Enter') resolveEscalation(r);
+      });
     }
 
     document.getElementById('modalOverlay').classList.add('open');
   }
 
   async function resolveEscalation(r) {
-    const btn = document.getElementById('resolveBtn');
+    const nameInput = document.getElementById('resolverName');
+    const btn       = document.getElementById('resolveBtn');
+    const name      = nameInput.value.trim();
+
+    if (!name) {
+      nameInput.classList.add('error');
+      nameInput.focus();
+      nameInput.placeholder = 'Please enter your name first';
+      return;
+    }
+    nameInput.classList.remove('error');
+
     btn.disabled = true;
-    btn.textContent = 'Updating...';
+    btn.innerHTML = 'Updating...';
 
     try {
+      const now = new Date().toISOString();
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/escalations?id=eq.${r.id}`,
         {
@@ -711,26 +742,29 @@
             'Content-Type': 'application/json',
             Prefer: 'return=representation'
           },
-          body: JSON.stringify({ status: 'Resolved' })
+          body: JSON.stringify({ status: 'Resolved', resolved_by: name, resolved_at: now })
         }
       );
       if (!res.ok) throw new Error(await res.text());
 
       // Update local data
       r.status = 'Resolved';
+      r.resolved_by = name;
+      r.resolved_at = now;
       const idx = allData.findIndex(x => x.id === r.id);
-      if (idx !== -1) allData[idx].status = 'Resolved';
+      if (idx !== -1) allData[idx] = { ...allData[idx], status: 'Resolved', resolved_by: name, resolved_at: now };
 
-      // Update modal status badge + footer in place
+      // Update modal in place
       document.getElementById('modalStatus').innerHTML = statusBadge('Resolved');
-      document.getElementById('modalFooter').innerHTML = `<span class="already-resolved">✓ Marked as resolved</span>`;
+      document.getElementById('modalFooter').innerHTML =
+        `<span class="already-resolved">✓ Resolved by <strong>${name}</strong> on ${fmtDate(now)}</span>`;
 
-      // Refresh table and stats silently
+      // Refresh table and stats
       updateStats(allData);
       renderTable(applyFilter(allData, activeFilter));
     } catch (err) {
       btn.disabled = false;
-      btn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Mark as Resolved`;
+      btn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Mark Resolved`;
       alert('Failed to update: ' + err.message);
     }
   }
