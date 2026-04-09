@@ -353,7 +353,30 @@
     }
     .modal-close:hover { background: var(--toggle-hover); }
 
-    .modal-body { padding: 24px; }
+    .modal-body { padding: 24px 24px 0; }
+
+    .modal-footer {
+      padding: 16px 24px 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .resolve-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 8px; border: none;
+      background: var(--teal); color: #fff;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .resolve-btn:hover { opacity: 0.85; }
+    .resolve-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .resolve-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    .already-resolved {
+      font-size: 13px; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 6px;
+    }
 
     .detail-row {
       display: flex;
@@ -520,6 +543,7 @@
       <button class="modal-close" id="modalClose">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
   </div>
 </div>
 
@@ -639,19 +663,76 @@
     );
   }
 
+  let currentRecord = null;
+
   function openModal(r) {
+    currentRecord = r;
     document.getElementById('modalBody').innerHTML = `
       <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${r.user_name || '—'}</span></div>
       <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${r.user_email || '—'}</span></div>
       <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value"><span class="cat-badge">${r.category || 'other'}</span></span></div>
-      <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusBadge(r.status)}</span></div>
+      <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value" id="modalStatus">${statusBadge(r.status)}</span></div>
       <div class="detail-row"><span class="detail-label">Appointment</span><span class="detail-value">${fmtAppt(r.appointment_time)}</span></div>
       <div class="detail-row"><span class="detail-label">Logged</span><span class="detail-value">${fmtDate(r.created_at)}</span></div>
       <div class="detail-row"><span class="detail-label">Reason</span><span class="detail-value">${r.escalation_reason || '—'}</span></div>
       <div class="section-label">Conversation Transcript</div>
-      <div class="transcript-box">${r.transcript_summary || 'No transcript recorded.'}</div>
+      <div class="transcript-box" style="margin-bottom:4px">${r.transcript_summary || 'No transcript recorded.'}</div>
     `;
+
+    const footer = document.getElementById('modalFooter');
+    const isResolved = (r.status || 'Open') === 'Resolved';
+    footer.innerHTML = isResolved
+      ? `<span class="already-resolved">✓ Already resolved</span>`
+      : `<button class="resolve-btn" id="resolveBtn">
+           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+           Mark as Resolved
+         </button>`;
+
+    if (!isResolved) {
+      document.getElementById('resolveBtn').addEventListener('click', () => resolveEscalation(r));
+    }
+
     document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  async function resolveEscalation(r) {
+    const btn = document.getElementById('resolveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/escalations?id=eq.${r.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            apikey: SUPABASE_ANON,
+            Authorization: `Bearer ${SUPABASE_ANON}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify({ status: 'Resolved' })
+        }
+      );
+      if (!res.ok) throw new Error(await res.text());
+
+      // Update local data
+      r.status = 'Resolved';
+      const idx = allData.findIndex(x => x.id === r.id);
+      if (idx !== -1) allData[idx].status = 'Resolved';
+
+      // Update modal status badge + footer in place
+      document.getElementById('modalStatus').innerHTML = statusBadge('Resolved');
+      document.getElementById('modalFooter').innerHTML = `<span class="already-resolved">✓ Marked as resolved</span>`;
+
+      // Refresh table and stats silently
+      updateStats(allData);
+      renderTable(applyFilter(allData, activeFilter));
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Mark as Resolved`;
+      alert('Failed to update: ' + err.message);
+    }
   }
 
   document.getElementById('modalClose').addEventListener('click', () => {
