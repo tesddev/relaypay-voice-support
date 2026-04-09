@@ -222,6 +222,7 @@
     .mic-btn:active { transform: scale(0.97); }
     .mic-btn.active { background: var(--teal); }
     .mic-btn.active:hover { background: #0b8a7c; }
+    .mic-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
     .mic-btn svg {
       width: 28px;
@@ -231,6 +232,33 @@
       stroke-width: 2;
       stroke-linecap: round;
       stroke-linejoin: round;
+    }
+
+    /* End call button */
+    .end-btn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 999px;
+      border: none;
+      background: #DC2626;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .end-btn:hover { background: #b91c1c; transform: scale(1.03); }
+    .end-btn:active { transform: scale(0.97); }
+    .end-btn.visible { display: flex; }
+    .end-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      stroke-linecap: round;
     }
 
     /* Status */
@@ -416,6 +444,11 @@
       <span id="statusText">Ready — press to start</span>
     </div>
 
+    <button class="end-btn" id="endBtn" aria-label="End call">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      End Call
+    </button>
+
     <div class="escalation-notice" id="escalationNotice">
       Connecting you to a specialist — a support representative will follow up shortly.
     </div>
@@ -452,6 +485,7 @@
   const vapi = new Vapi(VAPI_PUBLIC_KEY);
   const micBtn     = document.getElementById("micBtn");
   const micRing    = document.getElementById("micRing");
+  const endBtn     = document.getElementById("endBtn");
   const statusDot  = document.getElementById("statusDot");
   const statusText = document.getElementById("statusText");
   const txList     = document.getElementById("transcriptList");
@@ -466,8 +500,16 @@
     statusText.textContent = label;
   }
 
+  function setCallUI(active) {
+    micBtn.classList.toggle("active", active);
+    micBtn.disabled = active;
+    micRing.classList.toggle("pulse", active);
+    endBtn.classList.toggle("visible", active);
+  }
+
   function addTurn(speaker, text) {
-    if (emptyState) emptyState.remove();
+    const existing = document.getElementById("emptyState");
+    if (existing) existing.remove();
     const turn = document.createElement("div");
     turn.className = "turn " + speaker;
     const spLabel = document.createElement("div");
@@ -489,31 +531,31 @@
   }
 
   micBtn.addEventListener("click", async () => {
-    if (!callActive) {
-      // Immediate visual feedback
-      setStatus("thinking", "Connecting...");
-      micBtn.disabled = true;
+    if (callActive) return;
 
-      // Request mic permission explicitly before starting
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (err) {
-        setStatus("escalation", "Microphone access denied — please allow mic access and try again.");
-        micBtn.disabled = false;
-        return;
-      }
+    setStatus("thinking", "Connecting...");
+    micBtn.disabled = true;
 
-      vapi.start(ASSISTANT_ID);
-    } else {
-      vapi.stop();
+    // Get mic permission then RELEASE the stream so Vapi can acquire it cleanly
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err) {
+      setStatus("escalation", "Microphone access denied — please allow mic access and try again.");
+      micBtn.disabled = false;
+      return;
     }
+
+    vapi.start(ASSISTANT_ID);
+  });
+
+  endBtn.addEventListener("click", () => {
+    vapi.stop();
   });
 
   vapi.on("call-start", () => {
     callActive = true;
-    micBtn.disabled = false;
-    micBtn.classList.add("active");
-    micRing.classList.add("pulse");
+    setCallUI(true);
     setStatus("listening", "Listening...");
     escNotice.classList.remove("visible");
   });
@@ -564,18 +606,14 @@
 
   vapi.on("call-end", () => {
     callActive = false;
-    micBtn.disabled = false;
-    micBtn.classList.remove("active");
-    micRing.classList.remove("pulse");
+    setCallUI(false);
     setStatus("idle", "Call ended — press to start a new session");
     agentTurnEl = null;
   });
 
   vapi.on("error", (err) => {
     callActive = false;
-    micBtn.disabled = false;
-    micBtn.classList.remove("active");
-    micRing.classList.remove("pulse");
+    setCallUI(false);
     const msg = err?.message || err?.error?.message || JSON.stringify(err);
     setStatus("escalation", "Error: " + msg);
     console.error("Vapi error:", err);
