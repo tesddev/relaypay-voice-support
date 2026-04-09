@@ -9,6 +9,47 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
   <style>
+    /* Auth gate */
+    #authGate {
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    #authGate.hidden { display: none; }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 36px;
+      width: 100%; max-width: 380px;
+      text-align: center;
+    }
+    .auth-logo { margin-bottom: 24px; }
+    .auth-logo img { height: 40px; }
+    [data-theme="dark"] .auth-logo img { background:#fff; padding:4px 10px; border-radius:6px; }
+    .auth-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+    .auth-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; }
+    .auth-input {
+      width: 100%; padding: 11px 14px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 14px; font-family: inherit;
+      margin-bottom: 12px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .auth-input:focus { border-color: var(--teal); }
+    .auth-btn {
+      width: 100%; padding: 11px; border-radius: 8px; border: none;
+      background: var(--blue); color: #fff;
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .auth-btn:hover { opacity: 0.88; }
+    .auth-error {
+      font-size: 12px; color: #EF4444; margin-top: 10px;
+      min-height: 18px;
+    }
+  </style>
+  <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -378,6 +419,18 @@
 </head>
 <body>
 
+<!-- Auth Gate -->
+<div id="authGate">
+  <div class="auth-card">
+    <div class="auth-logo"><img src="logo.png" alt="RelayPay" /></div>
+    <div class="auth-title">Dashboard Access</div>
+    <div class="auth-sub">This area is restricted to RelayPay staff.</div>
+    <input class="auth-input" type="password" id="authInput" placeholder="Enter password" autocomplete="current-password" />
+    <button class="auth-btn" id="authBtn">Sign In</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
 <header>
   <div class="logo">
     <img src="logo.png" alt="RelayPay" />
@@ -387,6 +440,7 @@
       <a href="index.html" class="nav-link">Voice Support</a>
       <a href="dashboard.html" class="nav-link active">Escalations</a>
     </nav>
+    <button id="signOutBtn" style="font-size:12px;font-weight:500;color:var(--text-secondary);background:none;border:1px solid var(--border);padding:5px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;font-family:inherit" onmouseover="this.style.borderColor='#EF4444';this.style.color='#EF4444'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">Sign out</button>
     <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
       <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
@@ -472,6 +526,47 @@
 <script>
   const SUPABASE_URL  = 'https://tpszlqzmlcpyxxkyuboi.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwc3pscXptbGNweXh4a3l1Ym9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjA4NjQsImV4cCI6MjA5MTIzNjg2NH0.qfIw42PkGMhVCjxdyhgMOaP83OZsMqK-3cYgqsST9HQ';
+
+  // ── Auth gate ────────────────────────────────────────────────────────────────
+  const DASHBOARD_PWD = 'relaypay2026';
+  const AUTH_KEY      = 'rp_dash_auth';
+
+  const authGate  = document.getElementById('authGate');
+  const authInput = document.getElementById('authInput');
+  const authBtn   = document.getElementById('authBtn');
+  const authError = document.getElementById('authError');
+  const signOutBtn = document.getElementById('signOutBtn');
+
+  function isAuthed() { return localStorage.getItem(AUTH_KEY) === '1'; }
+
+  function showGate()  { authGate.classList.remove('hidden'); }
+  function hideGate()  { authGate.classList.add('hidden'); }
+
+  function tryAuth() {
+    if (authInput.value === DASHBOARD_PWD) {
+      localStorage.setItem(AUTH_KEY, '1');
+      hideGate();
+      loadEscalations();
+    } else {
+      authError.textContent = 'Incorrect password. Try again.';
+      authInput.value = '';
+      authInput.focus();
+    }
+  }
+
+  authBtn.addEventListener('click', tryAuth);
+  authInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryAuth(); });
+
+  signOutBtn.addEventListener('click', () => {
+    localStorage.removeItem(AUTH_KEY);
+    authInput.value = '';
+    authError.textContent = '';
+    showGate();
+  });
+
+  // Show gate or proceed on load
+  if (isAuthed()) { hideGate(); } else { showGate(); }
+  // ────────────────────────────────────────────────────────────────────────────
 
   // Theme toggle
   document.getElementById('themeToggle').addEventListener('click', () => {
@@ -593,9 +688,11 @@
     }
   }
 
-  document.getElementById('refreshBtn').addEventListener('click', loadEscalations);
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    if (isAuthed()) loadEscalations();
+  });
 
-  loadEscalations();
+  if (isAuthed()) loadEscalations();
 </script>
 </body>
 </html>
