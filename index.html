@@ -488,8 +488,21 @@
     return ESCALATION_KEYWORDS.some(kw => lower.includes(kw));
   }
 
-  micBtn.addEventListener("click", () => {
+  micBtn.addEventListener("click", async () => {
     if (!callActive) {
+      // Immediate visual feedback
+      setStatus("thinking", "Connecting...");
+      micBtn.disabled = true;
+
+      // Request mic permission explicitly before starting
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        setStatus("escalation", "Microphone access denied — please allow mic access and try again.");
+        micBtn.disabled = false;
+        return;
+      }
+
       vapi.start(ASSISTANT_ID);
     } else {
       vapi.stop();
@@ -498,6 +511,7 @@
 
   vapi.on("call-start", () => {
     callActive = true;
+    micBtn.disabled = false;
     micBtn.classList.add("active");
     micRing.classList.add("pulse");
     setStatus("listening", "Listening...");
@@ -550,6 +564,7 @@
 
   vapi.on("call-end", () => {
     callActive = false;
+    micBtn.disabled = false;
     micBtn.classList.remove("active");
     micRing.classList.remove("pulse");
     setStatus("idle", "Call ended — press to start a new session");
@@ -558,6 +573,7 @@
 
   vapi.on("error", (err) => {
     callActive = false;
+    micBtn.disabled = false;
     micBtn.classList.remove("active");
     micRing.classList.remove("pulse");
     const msg = err?.message || err?.error?.message || JSON.stringify(err);
