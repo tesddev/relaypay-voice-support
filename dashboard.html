@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RelayPay — Escalations Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal: #0E9E8E;
+      --radius: 8px;
+      --transition: 0.2s ease;
+    }
+
+    [data-theme="light"] {
+      --blue: #0D2B5E;
+      --bg: #F5F5F5;
+      --surface: #FFFFFF;
+      --text: #1A1A1A;
+      --text-secondary: #5C5C6B;
+      --border: #E0E0E0;
+      --toggle-bg: #E8EAF0;
+      --toggle-hover: #D4D8E4;
+      --toggle-color: #5C5C6B;
+      --row-hover: #F9F9FB;
+      --stat-bg: #FFFFFF;
+    }
+
+    [data-theme="dark"] {
+      --blue: #4A8FD6;
+      --bg: #0F1117;
+      --surface: #1A1D27;
+      --text: #E8E8F0;
+      --text-secondary: #8B8B9E;
+      --border: #2A2D3A;
+      --toggle-bg: #2A2D3A;
+      --toggle-hover: #343848;
+      --toggle-color: #8B8B9E;
+      --row-hover: #1F2233;
+      --stat-bg: #1A1D27;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo img { height: 36px; width: auto; display: block; }
+    [data-theme="dark"] .logo img { background: #fff; padding: 4px 10px; border-radius: 6px; }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+
+    .header-nav { display: flex; align-items: center; gap: 4px; }
+    .nav-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: background var(--transition), color var(--transition);
+    }
+    .nav-link:hover { background: var(--toggle-bg); color: var(--text); }
+    .nav-link.active { background: var(--toggle-bg); color: var(--text); }
+
+    .theme-toggle {
+      width: 34px; height: 34px; border-radius: 8px; border: none;
+      background: var(--toggle-bg); color: var(--toggle-color);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background var(--transition), color var(--transition);
+    }
+    .theme-toggle:hover { background: var(--toggle-hover); }
+    .theme-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-sun, .icon-moon { display: none; }
+    [data-theme="dark"]  .icon-moon { display: block; }
+    [data-theme="light"] .icon-sun  { display: block; }
+
+    /* Main */
+    main {
+      flex: 1;
+      padding: 32px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .refresh-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-secondary);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .refresh-btn:hover { border-color: var(--teal); color: var(--teal); }
+    .refresh-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--stat-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-value.open   { color: #F59E0B; }
+    .stat-value.total  { color: var(--blue); }
+    .stat-value.resolved { color: var(--teal); }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+    /* Table */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+      cursor: pointer;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--row-hover); }
+
+    tbody td {
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    .td-name { font-weight: 600; }
+    .td-email { color: var(--text-secondary); font-size: 12px; }
+    .td-reason { color: var(--text-secondary); max-width: 260px; }
+    .td-reason span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .badge-open       { background: #FEF3C7; color: #92400E; }
+    .badge-resolved   { background: #D1FAE5; color: #065F46; }
+    .badge-closed     { background: #F3F4F6; color: #6B7280; }
+
+    [data-theme="dark"] .badge-open     { background: #3D2B00; color: #FCD34D; }
+    [data-theme="dark"] .badge-resolved { background: #052E16; color: #34D399; }
+    [data-theme="dark"] .badge-closed   { background: #1F2937; color: #9CA3AF; }
+
+    .cat-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: capitalize;
+      background: var(--toggle-bg);
+      color: var(--text-secondary);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 80vh;
+      overflow-y: auto;
+      transition: background var(--transition);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+    }
+
+    .modal-title { font-size: 16px; font-weight: 600; }
+
+    .modal-close {
+      width: 30px; height: 30px; border-radius: 6px; border: none;
+      background: var(--toggle-bg); color: var(--text-secondary);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: background var(--transition);
+    }
+    .modal-close:hover { background: var(--toggle-hover); }
+
+    .modal-body { padding: 24px; }
+
+    .detail-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    .detail-label {
+      width: 130px;
+      flex-shrink: 0;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .detail-value { color: var(--text); flex: 1; }
+
+    .transcript-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+
+    /* Empty / loading */
+    .state-msg {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 16px 24px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    @media (max-width: 640px) {
+      .col-time, .col-cat { display: none; }
+      main { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img src="logo.png" alt="RelayPay" />
+  </div>
+  <div class="header-right">
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link">Voice Support</a>
+      <a href="dashboard.html" class="nav-link active">Escalations</a>
+    </nav>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Escalations Dashboard</div>
+      <div class="page-subtitle">Live support escalations from the voice agent</div>
+    </div>
+    <button class="refresh-btn" id="refreshBtn">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Escalations</div>
+      <div class="stat-value total" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Open</div>
+      <div class="stat-value open" id="statOpen">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Resolved</div>
+      <div class="stat-value resolved" id="statResolved">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">This Week</div>
+      <div class="stat-value total" id="statWeek">—</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="Open">Open</button>
+    <button class="filter-btn" data-filter="Resolved">Resolved</button>
+    <button class="filter-btn" data-filter="account">Account</button>
+    <button class="filter-btn" data-filter="compliance">Compliance</button>
+    <button class="filter-btn" data-filter="dispute">Dispute</button>
+    <button class="filter-btn" data-filter="other">Other</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th class="col-cat">Category</th>
+          <th>Reason</th>
+          <th class="col-time">Appointment</th>
+          <th>Status</th>
+          <th class="col-time">Created</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="6"><div class="state-msg">Loading escalations...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<footer>
+  RelayPay &mdash; Internal Support Dashboard
+</footer>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Escalation Detail</div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL  = 'https://tpszlqzmlcpyxxkyuboi.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwc3pscXptbGNweXh4a3l1Ym9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjA4NjQsImV4cCI6MjA5MTIzNjg2NH0.qfIw42PkGMhVCjxdyhgMOaP83OZsMqK-3cYgqsST9HQ';
+
+  // Theme toggle
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+
+  let allData = [];
+  let activeFilter = 'all';
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+      ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function fmtAppt(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
+      ' at ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function statusBadge(s) {
+    const cls = s === 'Open' ? 'badge-open' : s === 'Resolved' ? 'badge-resolved' : 'badge-closed';
+    return `<span class="badge ${cls}">${s || 'Open'}</span>`;
+  }
+
+  function updateStats(data) {
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    document.getElementById('statTotal').textContent    = data.length;
+    document.getElementById('statOpen').textContent     = data.filter(r => (r.status || 'Open') === 'Open').length;
+    document.getElementById('statResolved').textContent = data.filter(r => r.status === 'Resolved').length;
+    document.getElementById('statWeek').textContent     = data.filter(r => new Date(r.created_at) >= weekAgo).length;
+  }
+
+  function renderTable(data) {
+    const tbody = document.getElementById('tableBody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="state-msg">No escalations found.</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map((r, i) => `
+      <tr data-idx="${i}">
+        <td>
+          <div class="td-name">${r.user_name || 'Unknown'}</div>
+          <div class="td-email">${r.user_email || ''}</div>
+        </td>
+        <td class="col-cat"><span class="cat-badge">${r.category || 'other'}</span></td>
+        <td class="td-reason"><span>${r.escalation_reason || '—'}</span></td>
+        <td class="col-time" style="font-size:12px;color:var(--text-secondary)">${fmtAppt(r.appointment_time)}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td class="col-time" style="font-size:12px;color:var(--text-secondary)">${fmtDate(r.created_at)}</td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('tr').forEach(row => {
+      row.addEventListener('click', () => openModal(data[+row.dataset.idx]));
+    });
+  }
+
+  function applyFilter(data, filter) {
+    if (filter === 'all') return data;
+    return data.filter(r =>
+      (r.status || 'Open') === filter ||
+      (r.category || 'other') === filter
+    );
+  }
+
+  function openModal(r) {
+    document.getElementById('modalBody').innerHTML = `
+      <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${r.user_name || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${r.user_email || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value"><span class="cat-badge">${r.category || 'other'}</span></span></div>
+      <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusBadge(r.status)}</span></div>
+      <div class="detail-row"><span class="detail-label">Appointment</span><span class="detail-value">${fmtAppt(r.appointment_time)}</span></div>
+      <div class="detail-row"><span class="detail-label">Logged</span><span class="detail-value">${fmtDate(r.created_at)}</span></div>
+      <div class="detail-row"><span class="detail-label">Reason</span><span class="detail-value">${r.escalation_reason || '—'}</span></div>
+      <div class="section-label">Conversation Transcript</div>
+      <div class="transcript-box">${r.transcript_summary || 'No transcript recorded.'}</div>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  document.getElementById('modalClose').addEventListener('click', () => {
+    document.getElementById('modalOverlay').classList.remove('open');
+  });
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      renderTable(applyFilter(allData, activeFilter));
+    });
+  });
+
+  async function loadEscalations() {
+    document.getElementById('tableBody').innerHTML =
+      '<tr><td colspan="6"><div class="state-msg">Loading...</div></td></tr>';
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/escalations?order=created_at.desc`,
+        { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      allData = await res.json();
+      updateStats(allData);
+      renderTable(applyFilter(allData, activeFilter));
+    } catch (err) {
+      document.getElementById('tableBody').innerHTML =
+        `<tr><td colspan="6"><div class="state-msg">Error loading data: ${err.message}</div></td></tr>`;
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', loadEscalations);
+
+  loadEscalations();
+</script>
+</body>
+</html>
