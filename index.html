@@ -561,10 +561,12 @@
   });
 
   vapi.on("speech-start", () => {
+    if (!callActive) return;
     setStatus("listening", "Listening...");
   });
 
   vapi.on("speech-end", () => {
+    if (!callActive) return;
     setStatus("thinking", "Thinking...");
   });
 
